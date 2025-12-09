@@ -1,0 +1,75 @@
+# -------------------------
+# General
+# -------------------------
+.DS_Store
+*.log
+*.tmp
+*.swp
+*.swo
+.env
+.env.*
+!.env.example
+
+# -------------------------
+# Node / Frontend
+# -------------------------
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.parcel-cache/
+frontend/.next/
+frontend/.turbo/
+frontend/.eslintcache
+
+# Environment files inside frontend
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+frontend/.env.test
+
+# -------------------------
+# Python / Backend
+# -------------------------
+backend/__pycache__/
+backend/*.pyc
+backend/**/*.pyc
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/venv/
+backend/.venv/
+backend/env/
+backend/.env
+
+# Alembic migration artifacts
+backend/alembic/versions/*.pyc
+backend/alembic/__pycache__/
+backend/alembic/versions/__pycache__/
+
+# SQLite or other local DBs
+backend/*.db
+backend/*.sqlite3
+
+# -------------------------
+# Logs
+# -------------------------
+logs/
+backend/logs/
+frontend/logs/
+*.log
+
+# -------------------------
+# VSCode / IDE
+# -------------------------
+.vscode/
+.idea/
+*.iml
+
+# -------------------------
+# Output / build artifacts
+# -------------------------
+dist/
+build/
+coverage/
