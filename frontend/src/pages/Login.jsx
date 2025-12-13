@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Mail, Lock, User, Eye, EyeOff, ArrowRight, Phone } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import login from "../images/login.jpg";
 import signup from "../images/signup.jpg";
 
@@ -8,12 +10,12 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [clicked, setClicked] = useState("");
 
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
     email: "",
     phone: "",
-    password: "",
-    kyc_status: false
+    password: ""
   });
 
   const [errors, setErrors] = useState({});
@@ -24,13 +26,13 @@ export default function Login() {
   }
 
   function handleChange(e) {
-    const { name, type, value, checked } = e.target;
+    const { name, value } = e.target;
     setForm({
       ...form,
-      [name]: type === "checkbox" ? checked : value
+      [name]: value
     });
 
-    setErrors({ ...errors, [e.target.name]: "" }); 
+    setErrors({ ...errors, [name]: "" }); 
   }
 
   function validate() {
@@ -42,8 +44,8 @@ export default function Login() {
         err.name = "Only letters allowed";
       
       if (!form.phone.trim()) err.phone = "Mobile No. is required";
-      else if (form.phone.length < 10)
-        err.password = "Mobile No. must have 10 digits";
+      else if (form.phone.length !== 10)
+        err.phone = "Mobile No. must have 10 digits";
     }
 
     if (!form.email.trim()) err.email = "Email is required";
@@ -57,7 +59,7 @@ export default function Login() {
     return err;
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const validationErrors = validate();
 
@@ -65,11 +67,38 @@ export default function Login() {
       setErrors(validationErrors);
       return;
     }
+    
+    const apiUrl = "http://localhost:8000/api";
 
-    alert("Form Submitted: " + JSON.stringify(form));
+    const endpoint = isLoginPage ? `${apiUrl}/auth/login` : `${apiUrl}/auth/register`;
+    
+    const payload = isLoginPage 
+      ? { email: form.email, password: form.password }
+      : { name: form.name, email: form.email, password: form.password, phone: form.phone };
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("refresh_token", data.refresh_token);
+        toast.success("Login successful");
+
+        navigate("/");
+      } else {
+        toast.error("Error: " + (data.detail || "Something went wrong"));
+      }
+    } catch (error) {
+      toast.error("Network error: " + error.message);
+    }
   }
-
-  return (
+ return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-blue-50 to-white-300 relative overflow-hidden">
 
       <div className="w-[80%] max-w-6xl bg-white/70 backdrop-blur-xl shadow-2xl rounded-3xl p-7 flex items-center justify-center lg:p-10">
