@@ -11,15 +11,7 @@ export default function Home() {
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     setIsLoggedIn(!!token);
-  }, []);
-
-  const handleAuthClick = () => {
-    if (isLoggedIn) {
-      navigate('/dashboard');
-    } else {
-      navigate('/login');
-    }
-  };
+  }, [isLoggedIn]);
 
   const features = [
     {

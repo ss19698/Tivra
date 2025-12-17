@@ -1,20 +1,19 @@
-import { Menu, X,Building2 } from "lucide-react";
+import { Menu, X,Building2,UserCircle,LogIn } from "lucide-react";
 import React,{ useState , useEffect} from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    setIsLoggedIn(!!token);
-  }, []);
+  
+  const { isLoggedIn } = useAuth();
 
   const handleAccountClick = () => {
     if (isLoggedIn) {
       navigate("/Dashboard");
+      setOpen(false);
     } else {
       navigate("/login");
     }
@@ -29,24 +28,25 @@ export default function Navbar() {
         </div>
 
         <ul className="hidden md:flex gap-12 text-gray-700 font-medium">
-          <li className="hover:text-blue-600 transition">Home</li>
-          <li className="hover:text-blue-600 transition">Services</li>
-          <li className="hover:text-blue-600 transition">Analytics</li>
-          <li className="hover:text-blue-600 transition">Support</li>
+          <a href = '/' className="hover:text-blue-600 transition">Home</a>
+          <a href = '/Services' className="hover:text-blue-600 transition">Services</a>
+          <a href = '/Analytics' className="hover:text-blue-600 transition">Analytics</a>
+          <a href = '/Support' className="hover:text-blue-600 transition">Support</a>
         </ul>
 
         <button
           onClick={handleAccountClick}
-          className="hidden md:block px-5 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all">
+          className=" hidden md:flex items-center gap-2 px-3 py-2 rounded-full transition-all duration-300 hover:bg-blue-100 hover:scale-105 active:scale-95">
           {isLoggedIn ? (
-            <>
-              <UserCircle className="w-5 h-5" />
-              <span>My Account</span>
-            </>
+            <UserCircle className="w-8 h-8 text-blue-600" />
           ) : (
-            <span>Login</span>
+            <>
+              <LogIn className="w-5 h-5 text-blue-600" />
+              <span className="text-blue-600 font-medium">Login</span>
+            </>
           )}
         </button>
+
 
         <button onClick={() => setOpen(!open)} className="md:hidden">
           {open ? <X size={28} /> : <Menu size={28} />}
@@ -55,10 +55,10 @@ export default function Navbar() {
 
       {open && (
         <div className="md:hidden bg-white/80 backdrop-blur-lg px-6 py-4 flex flex-col gap-4 text-gray-800 font-medium border-b border-gray-200">
-          <a className="py-2 hover:text-blue-600 transition">Home</a>
-          <a className="py-2 hover:text-blue-600 transition">Services</a>
-          <a className="py-2 hover:text-blue-600 transition">Analytics</a>
-          <a className="py-2 hover:text-blue-600 transition">Support</a>
+          <a href = '/' className="hover:text-blue-600 transition">Home</a>
+          <a href = '/Services' className="hover:text-blue-600 transition">Services</a>
+          <a href = '/Analytics' className="hover:text-blue-600 transition">Analytics</a>
+          <a href = '/Support' className="hover:text-blue-600 transition">Support</a>
           <button
             onClick={handleAccountClick}
             className="mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all"

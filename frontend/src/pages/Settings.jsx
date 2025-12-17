@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { User,Mail,Phone,MapPin,Lock,Globe,Settings,Bell,Banknote} from 'lucide-react';
+import axiosClient from "../utils/axiosClient";
 
 export default function Setting(){
   const [userProfile, setUserProfile] = useState({
@@ -35,11 +36,7 @@ export default function Setting(){
       const token = localStorage.getItem('access_token');
       if (!token) return;
 
-      const response = await fetch('http://localhost:8000/api/user/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await axiosClient.get("/auth/me");
 
       if (response.ok) {
         const data = await response.json();

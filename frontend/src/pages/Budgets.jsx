@@ -1,426 +1,404 @@
-import React,{ useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, TrendingUp, AlertCircle, CheckCircle, PieChart, Calendar, X, Save } from 'lucide-react';
-import toast from 'react-hot-toast';
+import React, { useState,useEffect } from "react";
+import { Plus, Edit2, Trash2, AlertCircle, CheckCircle, PieChart, X, Save } from "lucide-react";
+import { getBudgets,createBudget,updateBudget,deleteBudget } from "../api/budgets";
 
 export default function Budgets() {
   const [budgets, setBudgets] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [currentBudget, setCurrentBudget] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(
+    new Date().getMonth() + 1
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    new Date().getFullYear()
+  );
+  const [toast, setToast] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    month: new Date().getMonth() + 1,
-    year: new Date().getFullYear(),
-    category: 'Food',
-    limit_amount: '',
-    spent_amount: '0'
+    month: selectedMonth,
+    year: selectedYear,
+    category: "Food",
+    limit_amount: "",
+    spent_amount: "0",
   });
 
-  const categories = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Healthcare', 'Other'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const categories = [
+    "Food",
+    "Transport",
+    "Shopping",
+    "Bills",
+    "Entertainment",
+    "Healthcare",
+    "Other",
+  ];
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   useEffect(() => {
-    fetchBudgets();
+    loadBudgets();
   }, [selectedMonth, selectedYear]);
 
-  async function fetchBudgets() {
+  const loadBudgets = async () => {
     try {
-      const token = localStorage.getItem('access_token');
-      const response = await fetch(`/api/budgets?month=${selectedMonth}&year=${selectedYear}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setBudgets(data);
-      }
-    } catch (error) {
-      console.error('Error fetching budgets:', error);
+      setLoading(true);
+      const data = await getBudgets(selectedMonth, selectedYear);
+      setBudgets(Array.isArray(data) ? data : []);
+    } catch (e) {
+      showToast(e.message, "error");
+      setBudgets([]);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    setErrors({ ...errors, [name]: '' });
-  }
-
-  function validateForm() {
-    const newErrors = {};
-
-    if (!form.category) {
-      newErrors.category = 'Category is required';
+  const handleSubmit = async () => {
+    if (!form.limit_amount || form.limit_amount <= 0) {
+      showToast("Please enter a valid limit amount", "error");
+      return;
     }
-
-    if (!form.limit_amount || parseFloat(form.limit_amount) <= 0) {
-      newErrors.limit_amount = 'Budget limit must be greater than 0';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    const token = localStorage.getItem('access_token');
-    const url = editMode ? `/api/budgets/${currentBudget.id}` : '/api/budgets';
-    const method = editMode ? 'PUT' : 'POST';
-
-    const payload = {
-      month: parseInt(form.month),
-      year: parseInt(form.year),
-      category: form.category,
-      limit_amount: parseFloat(form.limit_amount),
-      spent_amount: parseFloat(form.spent_amount)
-    };
 
     try {
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
+      setSubmitting(true);
+      const payload = {
+        month: Number(form.month),
+        year: Number(form.year),
+        category: form.category,
+        limit_amount: Number(form.limit_amount),
+        spent_amount: Number(form.spent_amount),
+      };
 
-      if (response.ok) {
-        await fetchBudgets();
-        closeModal();
-        toast.success(editMode ? 'Budget updated!' : 'Budget created!');
+      if (editMode) {
+        await updateBudget(currentBudget.id, payload);
+        showToast("Budget updated", "success");
       } else {
-        const error = await response.json();
-        toast.error('Error: ' + (error.detail || 'Something went wrong'));
+        await createBudget(payload);
+        showToast("Budget created", "success");
       }
-    } catch (error) {
-      toast.error('Network error: ' + error.message);
+
+      setShowModal(false);
+      resetForm();
+      loadBudgets();
+    } catch (e) {
+      showToast(e.message, "error");
+    } finally {
+      setSubmitting(false);
     }
-  }
+  };
 
-  async function handleDelete(budgetId) {
-    if (!confirm('Delete this budget?')) return;
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this budget?")) return;
 
-    const token = localStorage.getItem('access_token');
     try {
-      const response = await fetch(`/api/budgets/${budgetId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (response.ok) {
-        await fetchBudgets();
-        toast.success('Budget deleted!');
-      }
-    } catch (error) {
-      toast.error('Network error: ' + error.message);
+      await deleteBudget(id);
+      showToast("Budget deleted", "success");
+      loadBudgets();
+    } catch (e) {
+      showToast(e.message, "error");
     }
-  }
+  };
 
-  function openAddModal() {
-    setEditMode(false);
-    setCurrentBudget(null);
+  const resetForm = () => {
     setForm({
       month: selectedMonth,
       year: selectedYear,
-      category: 'Food',
-      limit_amount: '',
-      spent_amount: '0'
+      category: "Food",
+      limit_amount: "",
+      spent_amount: "0",
     });
-    setErrors({});
-    setShowModal(true);
-  }
+  };
 
-  function openEditModal(budget) {
+  const openEditModal = (b) => {
     setEditMode(true);
-    setCurrentBudget(budget);
+    setCurrentBudget(b);
     setForm({
-      month: budget.month,
-      year: budget.year,
-      category: budget.category,
-      limit_amount: budget.limit_amount.toString(),
-      spent_amount: budget.spent_amount.toString()
+      month: b.month,
+      year: b.year,
+      category: b.category,
+      limit_amount: b.limit_amount.toString(),
+      spent_amount: b.spent_amount.toString(),
     });
-    setErrors({});
     setShowModal(true);
-  }
+  };
 
-  function closeModal() {
-    setShowModal(false);
+  const openAddModal = () => {
     setEditMode(false);
     setCurrentBudget(null);
-    setErrors({});
-  }
+    resetForm();
+    setShowModal(true);
+  };
 
-  function getProgressColor(percentage) {
-    if (percentage < 50) return 'bg-green-500';
-    if (percentage < 75) return 'bg-yellow-500';
-    if (percentage < 90) return 'bg-orange-500';
-    return 'bg-red-500';
-  }
+  const getProgressPercentage = (spent, limit) => {
+    return Math.min((spent / limit) * 100, 100);
+  };
 
-  function getBudgetStatus(spent, limit) {
-    const percentage = (spent / limit) * 100;
-    if (percentage >= 100) return { text: 'Exceeded', color: 'text-red-600', icon: AlertCircle };
-    if (percentage >= 90) return { text: 'Critical', color: 'text-orange-600', icon: AlertCircle };
-    if (percentage >= 75) return { text: 'High', color: 'text-yellow-600', icon: TrendingUp };
-    return { text: 'On Track', color: 'text-green-600', icon: CheckCircle };
-  }
+  const getStatusColor = (spent, limit) => {
+    const percentage = getProgressPercentage(spent, limit);
+    if (percentage >= 100) return "bg-red-500";
+    if (percentage >= 80) return "bg-yellow-500";
+    return "bg-green-500";
+  };
 
-  const totalLimit = budgets.reduce((sum, b) => sum + parseFloat(b.limit_amount), 0);
-  const totalSpent = budgets.reduce((sum, b) => sum + parseFloat(b.spent_amount), 0);
-  const totalRemaining = totalLimit - totalSpent;
+  const filteredBudgets = budgets.filter(b => b.month === selectedMonth && b.year === selectedYear);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Budget Manager</h1>
-            <p className="text-gray-600 mt-1">Plan and track your spending limits</p>
-          </div>
+      <div className="max-w-6xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800">Budget Manager</h1>
           <button
             onClick={openAddModal}
-            className="px-5 py-2 bg-green-600 text-white rounded-lg font-medium flex items-center gap-2 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex gap-2 items-center shadow-lg transition"
           >
-            <Plus className="w-5 h-5" />
-            Add Budget
+            <Plus size={20} /> Add Budget
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-          <div className="flex items-center gap-4 mb-6">
-            <Calendar className="w-6 h-6 text-gray-600" />
-            <h3 className="text-lg font-bold text-gray-900">Select Period</h3>
-          </div>
-          <div className="flex gap-4">
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500"
-            >
-              {months.map((month, index) => (
-                <option key={index} value={index + 1}>{month}</option>
-              ))}
-            </select>
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              className="px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-green-500"
-            >
-              {[2023, 2024, 2025, 2026].map(year => (
-                <option key={year} value={year}>{year}</option>
-              ))}
-            </select>
-          </div>
+        {/* Month/Year Selector */}
+        <div className="bg-white p-4 rounded-lg shadow mb-6 flex gap-4">
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            {months.map((m, i) => (
+              <option key={i} value={i + 1}>{m}</option>
+            ))}
+          </select>
+
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="border border-gray-300 rounded px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            {[2023, 2024, 2025, 2026].map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-blue-500">
-            <p className="text-sm text-gray-500 mb-1">Total Budget</p>
-            <p className="text-3xl font-bold text-gray-900">${totalLimit.toFixed(2)}</p>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-orange-500">
-            <p className="text-sm text-gray-500 mb-1">Total Spent</p>
-            <p className="text-3xl font-bold text-orange-600">${totalSpent.toFixed(2)}</p>
-          </div>
-          <div className="bg-white rounded-xl p-6 shadow-lg border-l-4 border-green-500">
-            <p className="text-sm text-gray-500 mb-1">Remaining</p>
-            <p className={`text-3xl font-bold ${totalRemaining >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${Math.abs(totalRemaining).toFixed(2)}
-            </p>
-          </div>
-        </div>
-
-        {budgets.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center shadow-lg">
-            <PieChart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-gray-900 mb-2">No Budgets Set</h3>
-            <p className="text-gray-600 mb-6">Create your first budget to start tracking spending</p>
-            <button
-              onClick={openAddModal}
-              className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium inline-flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              Create Budget
-            </button>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {budgets.map((budget) => {
-              const percentage = (parseFloat(budget.spent_amount) / parseFloat(budget.limit_amount)) * 100;
-              const status = getBudgetStatus(parseFloat(budget.spent_amount), parseFloat(budget.limit_amount));
-              const StatusIcon = status.icon;
-
-              return (
-                <div key={budget.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900">{budget.category}</h3>
-                      <p className="text-sm text-gray-500">{months[budget.month - 1]} {budget.year}</p>
-                    </div>
-                    <div className={`flex items-center gap-1 ${status.color}`}>
-                      <StatusIcon className="w-5 h-5" />
-                      <span className="text-sm font-medium">{status.text}</span>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-600">Spent</span>
-                      <span className="font-bold">${parseFloat(budget.spent_amount).toFixed(2)}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
-                      <div
-                        className={`h-4 ${getProgressColor(percentage)} transition-all`}
-                        style={{ width: `${Math.min(percentage, 100)}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex justify-between text-sm mt-2">
-                      <span className="text-gray-600">Limit</span>
-                      <span className="font-bold">${parseFloat(budget.limit_amount).toFixed(2)}</span>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Remaining</span>
-                      <span className={`text-lg font-bold ${parseFloat(budget.limit_amount) - parseFloat(budget.spent_amount) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ${Math.abs(parseFloat(budget.limit_amount) - parseFloat(budget.spent_amount)).toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {percentage.toFixed(1)}% used
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => openEditModal(budget)}
-                      className="flex-1 py-2 border-2 border-green-600 text-green-600 rounded-lg font-medium hover:bg-green-50 flex items-center justify-center gap-2"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(budget.id)}
-                      className="flex-1 py-2 border-2 border-red-600 text-red-600 rounded-lg font-medium hover:bg-red-50 flex items-center justify-center gap-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+        {/* Toast Notification */}
+        {toast && (
+          <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
+            toast.type === "success" 
+              ? "bg-green-100 text-green-800" 
+              : "bg-red-100 text-red-800"
+          }`}>
+            {toast.type === "success" ? (
+              <CheckCircle size={20} />
+            ) : (
+              <AlertCircle size={20} />
+            )}
+            {toast.message}
           </div>
         )}
 
+        {/* Loading State */}
+        {loading && (
+          <div className="bg-white p-16 rounded-xl text-center shadow">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading budgets...</p>
+          </div>
+        )}
+
+        {/* Budgets Grid */}
+        {!loading && filteredBudgets.length === 0 ? (
+          <div className="bg-white p-16 rounded-xl text-center shadow">
+            <PieChart className="mx-auto mb-4 text-gray-400" size={48} />
+            <p className="text-gray-500 text-lg">No budgets found for {months[selectedMonth - 1]} {selectedYear}</p>
+          </div>
+        ) : (
+          !loading && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredBudgets.map((b) => {
+                const spent = Number(b.spent_amount);
+                const limit = Number(b.limit_amount);
+                const percentage = getProgressPercentage(spent, limit);
+                const isOverBudget = spent > limit;
+
+                return (
+                  <div key={b.id} className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-bold text-lg text-gray-800">{b.category}</h3>
+                        <p className="text-sm text-gray-500">{months[b.month - 1]} {b.year}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditModal(b)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
+                        >
+                          <Edit2 size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(b.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded transition"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-semibold text-gray-700 mr-2">Spent</span>
+                        <span className={`text-sm font-bold ${isOverBudget ? "text-red-600" : "text-gray-800"}`}>
+                          ${spent.toFixed(2)} / ${limit.toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3">
+                        <div
+                          className={`h-3 rounded-full transition-all ${getStatusColor(spent, limit)}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {isOverBudget && (
+                        <div className="flex items-center gap-1 text-red-600 text-sm font-semibold">
+                          <AlertCircle size={16} />
+                          Over budget by ${(spent - limit).toFixed(2)}
+                        </div>
+                      )}
+                      {!isOverBudget && (
+                        <div className="flex items-center gap-1 text-green-600 text-sm font-semibold">
+                          <CheckCircle size={16} />
+                          ${(limit - spent).toFixed(2)} remaining
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        )}
+
+        {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+            <div className="bg-white p-8 rounded-xl w-full max-w-md shadow-2xl">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {editMode ? 'Edit Budget' : 'Create Budget'}
+                <h2 className="font-bold text-2xl text-gray-800">
+                  {editMode ? "Edit Budget" : "Create Budget"}
                 </h2>
-                <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-lg">
-                  <X className="w-6 h-6" />
+                <button
+                  onClick={() => setShowModal(false)}
+                  disabled={submitting}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X size={24} />
                 </button>
               </div>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
-                    <select
-                      name="month"
-                      value={form.month}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500"
-                    >
-                      {months.map((month, index) => (
-                        <option key={index} value={index + 1}>{month}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-                    <select
-                      name="year"
-                      value={form.year}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500"
-                    >
-                      {[2023, 2024, 2025, 2026].map(year => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Category
+                  </label>
                   <select
-                    name="category"
                     value={form.category}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500"
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    disabled={submitting}
+                    className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
+                    {categories.map((c) => (
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
-                  {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Budget Limit *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Month
+                  </label>
+                  <select
+                    value={form.month}
+                    onChange={(e) => setForm({ ...form, month: Number(e.target.value) })}
+                    disabled={submitting}
+                    className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    {months.map((m, i) => (
+                      <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Year
+                  </label>
+                  <select
+                    value={form.year}
+                    onChange={(e) => setForm({ ...form, year: Number(e.target.value) })}
+                    disabled={submitting}
+                    className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                  >
+                    {[2023, 2024, 2025, 2026].map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Budget Limit ($)
+                  </label>
                   <input
-                    name="limit_amount"
                     type="number"
                     step="0.01"
-                    placeholder="1000.00"
+                    min="0"
+                    placeholder="0.00"
                     value={form.limit_amount}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500"
+                    onChange={(e) => setForm({ ...form, limit_amount: e.target.value })}
+                    disabled={submitting}
+                    className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
-                  {errors.limit_amount && <p className="text-red-500 text-sm mt-1">{errors.limit_amount}</p>}
                 </div>
 
-                {editMode && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Spent Amount</label>
-                    <input
-                      name="spent_amount"
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={form.spent_amount}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-green-500"
-                    />
-                  </div>
-                )}
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={closeModal}
-                    className="flex-1 py-3 border-2 border-gray-300 rounded-xl font-medium hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSubmit}
-                    className="flex-1 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 flex items-center justify-center gap-2"
-                  >
-                    <Save className="w-5 h-5" />
-                    {editMode ? 'Update' : 'Create'}
-                  </button>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Amount Spent ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={form.spent_amount}
+                    onChange={(e) => setForm({ ...form, spent_amount: e.target.value })}
+                    disabled={submitting}
+                    className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
                 </div>
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 rounded font-semibold flex items-center justify-center gap-2 transition"
+                >
+                  <Save size={18} />
+                  {submitting ? "Saving..." : (editMode ? "Update Budget" : "Create Budget")}
+                </button>
+
+                <button
+                  onClick={() => setShowModal(false)}
+                  disabled={submitting}
+                  className="w-full border border-gray-300 text-gray-700 py-2 rounded font-semibold hover:bg-gray-50 disabled:opacity-50 transition"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>

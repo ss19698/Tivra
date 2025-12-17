@@ -5,12 +5,15 @@ import toast from "react-hot-toast";
 import { login, register } from "../api/auth.js";
 import loginImg from "../images/login.jpg";
 import signupImg from "../images/signup.jpg";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const [isLoginPage, setIsLoginPage] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [clicked, setClicked] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const { loginUser } = useAuth();
 
   const navigate = useNavigate();
   const [form, setForm] = useState({
@@ -81,16 +84,10 @@ export default function Login() {
       } else {
         data = await register(form.name, form.email, form.password, form.phone);
       }
-
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
-      localStorage.setItem("user", JSON.stringify(data.user));
       
       toast.success(isLoginPage ? "Login successful!" : "Account created successfully!");
-      
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 500);
+      loginUser(data);
+      navigate("/");
 
     } catch (error) {
       console.error("Authentication error:", error);

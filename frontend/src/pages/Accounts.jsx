@@ -26,6 +26,7 @@ export default function Accounts() {
     fetchAccounts();
   }, []);
 
+
   async function fetchAccounts() {
     try {
       setLoading(true);
@@ -74,11 +75,11 @@ export default function Accounts() {
     if (!validateForm()) return;
 
     const payload = {
-      bank_name: form.bank_name,
+      bank_name: form.bank_name.trim(),
       account_type: form.account_type,
-      masked_account: form.masked_account || null,
+      masked_account: form.masked_account.trim() || "0000",
       currency: form.currency,
-      balance: parseFloat(form.balance)
+      balance: Number(form.balance),
     };
 
     try {
@@ -102,22 +103,52 @@ export default function Accounts() {
       setLoading(false);
     }
   }
+      
+  function confirmDelete(onConfirm) {
+    toast.custom((t) => (
+      <div className="bg-white rounded-xl shadow-lg p-4 w-80">
+        <p className="text-gray-800 font-medium mb-4">
+          Are you sure you want to delete this account?
+        </p>
+
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="px-4 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={() => {
+              toast.dismiss(t.id);
+              onConfirm();
+            }}
+            className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    ));
+  }
 
   async function handleDelete(accountId) {
-    if (!confirm('Are you sure you want to delete this account?')) return;
-
+  confirmDelete(async () => {
     try {
       setLoading(true);
       await deleteAccount(accountId);
-      toast.success('Account deleted successfully!');
+      toast.success("Account deleted successfully!");
       await fetchAccounts();
     } catch (error) {
-      console.error('Error deleting account:', error);
-      toast.error('Failed to delete account');
+      console.error("Error deleting account:", error);
+      toast.error("Failed to delete account");
     } finally {
       setLoading(false);
     }
-  }
+  });
+}
+
 
   function openAddModal() {
     setEditMode(false);

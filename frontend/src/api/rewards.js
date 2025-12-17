@@ -1,6 +1,6 @@
 import { getAuthHeaders } from "./auth";
 
-const API_BASE_URL = 'http://localhost:8000/api/rewards';
+const API_BASE_URL = 'https://modern-digital-banking-dashboard.onrender.com/api/rewards';
 
 export async function fetchRewards() {
   const response = await fetch(`${API_BASE_URL}/`, {

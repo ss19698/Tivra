@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Home, CreditCard, ReceiptIndianRupee, Gift, TrendingUp, Calendar, Plus, ArrowUpRight, ArrowDownRight, RefreshCcw, User, Settings, LogOut, PieChart, IndianRupee, Mail, Phone, MapPin, Lock, Bell, Globe, ImageOff } from 'lucide-react';
 import Accounts from './Accounts.jsx';
 import Transactions from './Transactions.jsx';
@@ -7,25 +7,48 @@ import { useNavigate } from 'react-router-dom';
 import Setting from './Settings.jsx';
 import Rewards from './Rewards.jsx';
 import Bills from './Bills.jsx';
+import { useAuth } from "../context/AuthContext";
+import { getBudgets } from '../api/budgets.js';
+
 
 export default function Dashboard() {
   const [activePage, setActivePage] = useState('Home');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
+  const { logoutUser } = useAuth();
+  const [budgets, setBudgets] = useState([]);
+  const [budgetsLoading, setBudgetsLoading] = useState(true);
 
-  const handleLogout = async () => {
-    try {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-      navigate("/");
-    } catch (error) {
-      console.error('Logout error:', error);
-      setMessage({ type: 'error', text: 'Error logging out' });
-    } finally {
-    }
+  useEffect(() => {
+    fetchBudgets();
+  }, []);
+
+    const fetchBudgets = async () => {
+      try {
+        setBudgetsLoading(true);
+        const data = await getBudgets();
+
+        const month = new Date().getMonth() + 1;
+        const year = new Date().getFullYear();
+
+        const filtered = Array.isArray(data)
+          ? data.filter(b => b.month === month && b.year === year)
+          : [];
+
+        setBudgets(filtered);
+      } catch (err) {
+        console.error("Budget fetch error:", err);
+        setBudgets([]);
+      } finally {
+        setBudgetsLoading(false);
+      }
+    };
+
+
+  const handleLogout = () => {
+    logoutUser();
+    navigate("/");
   };
-
   const transactions = [
     { name: 'Grocery Store', amount: -85.50, date: 'Today', category: 'Food', type: 'expense' },
     { name: 'Salary Deposit', amount: 5000.00, date: 'Today', category: 'Income', type: 'income' },
@@ -35,24 +58,11 @@ export default function Dashboard() {
     { name: 'Gas Station', amount: -65.00, date: '2 days ago', category: 'Transport', type: 'expense' }
   ];
 
-  const budgets = [
-    { category: 'Food', spent: 450, limit: 600, color: 'blue' },
-    { category: 'Shopping', spent: 380, limit: 500, color: 'purple' },
-    { category: 'Transport', spent: 180, limit: 200, color: 'yellow' },
-    { category: 'Bills', spent: 520, limit: 600, color: 'red' }
-  ];
-
   const bills = [
     { name: 'Netflix Subscription', amount: 15.99, dueDate: 'Dec 15', status: 'upcoming', auto: true },
     { name: 'Internet Bill', amount: 89.99, dueDate: 'Dec 18', status: 'upcoming', auto: false },
     { name: 'Phone Bill', amount: 45.00, dueDate: 'Dec 20', status: 'upcoming', auto: true },
     { name: 'Rent Payment', amount: 1500.00, dueDate: 'Dec 25', status: 'pending', auto: false }
-  ];
-
-  const rewards = [
-    { name: 'Cashback Earned', amount: 45.50, month: 'November' },
-    { name: 'Points Balance', amount: 2450, type: 'points' },
-    { name: 'Next Reward', needed: 550, unlock: '50 Voucher' }
   ];
 
   const MenuItem = ({ icon: Icon, label, page }) => (
@@ -104,7 +114,7 @@ export default function Dashboard() {
               <div className="grid md:grid-cols-3 gap-6">
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6">
                   <div className="text-sm opacity-90 mb-2">Total Balance</div>
-                  <div className="text-3xl font-bold mb-4">₹11,400.50</div>
+                  <div className="text-xl font-bold mb-4">₹11,400.50</div>
                   <div className="flex items-center gap-2 text-sm">
                     <TrendingUp className="w-4 h-4" />
                     <span>+12.5% from last month</span>
@@ -112,7 +122,7 @@ export default function Dashboard() {
                 </div>
                 <div className="bg-white/70 backdrop-blur-md shadow-lg rounded-2xl p-6">
                   <div className="text-sm text-gray-500 mb-2">Monthly Income</div>
-                  <div className="text-3xl font-bold text-gray-900 mb-4">₹5,000.00</div>
+                  <div className="text-xl font-bold text-gray-900 mb-4">₹5,000.00</div>
                   <div className="flex items-center gap-2 text-sm text-green-600">
                     <ArrowUpRight className="w-4 h-4" />
                     <span>Salary deposited</span>
@@ -120,7 +130,7 @@ export default function Dashboard() {
                 </div>
                 <div className="bg-white/70 backdrop-blur-md shadow-lg rounded-2xl p-6">
                   <div className="text-sm text-gray-500 mb-2">Monthly Expenses</div>
-                  <div className="text-3xl font-bold text-gray-900 mb-4">₹2,245.50</div>
+                  <div className="text-xl font-bold text-gray-900 mb-4">₹2,245.50</div>
                   <div className="flex items-center gap-2 text-sm text-red-600">
                     <ArrowDownRight className="w-4 h-4" />
                     <span>-15% vs last month</span>
@@ -165,20 +175,41 @@ export default function Dashboard() {
                     <button className="text-blue-600 text-sm font-medium">Manage</button>
                   </div>
                   <div className="space-y-4">
-                    {budgets.map((budget, i) => (
-                      <div key={i}>
-                        <div className="flex justify-between mb-2">
-                          <span className="text-sm font-medium">{budget.category}</span>
-                          <span className="text-sm text-gray-500">₹{budget.spent} / ₹{budget.limit}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full bg-${budget.color}-500`}
-                            style={{ width: `${(budget.spent / budget.limit) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
+                    {budgetsLoading ? (
+                        <p className="text-sm text-gray-500">Loading budgets...</p>
+                      ) : budgets.length === 0 ? (
+                        <p className="text-sm text-gray-500">No budgets found</p>
+                      ) : (
+                        budgets.map((budget, i) => {
+                          const spent = Number(budget.spent_amount);
+                          const limit = Number(budget.limit_amount);
+                          const percent = Math.min((spent / limit) * 100, 100);
+
+                          return (
+                            <div key={i}>
+                              <div className="flex justify-between mb-2">
+                                <span className="text-sm font-medium">{budget.category}</span>
+                                <span className="text-sm text-gray-500">
+                                  ₹{spent} / ₹{limit}
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className={`h-2 rounded-full ${
+                                    percent >= 100
+                                      ? 'bg-red-500'
+                                      : percent >= 80
+                                      ? 'bg-yellow-500'
+                                      : 'bg-green-500'
+                                  }`}
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+
                   </div>
                 </div>
               </div>

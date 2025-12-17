@@ -1,6 +1,6 @@
 import { getAuthHeaders } from "./auth";
 
-const BASE_URL = 'http://localhost:8000/api/rewards';
+const BASE_URL = 'https://modern-digital-banking-dashboard.onrender.com/api/bills';
 
 export const getBills = async () => {
   const res = await fetch(BASE_URL, { headers: getAuthHeaders() });
