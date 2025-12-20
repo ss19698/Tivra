@@ -4,7 +4,7 @@ import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
-import Dashboard from './pages/Dashboard.jsx';
+import Dashboard from './pages/CustDashboard.jsx';
 import Services from './pages/Services';
 import Analytics from './pages/Analytics';
 import Support from './pages/Support';
@@ -13,7 +13,9 @@ function MainLayout() {
   return (
     <>
       <Navbar />
-      <Outlet /> 
+      <main className="pt-20">
+        <Outlet />
+      </main>
       <Footer />
     </>
   );
