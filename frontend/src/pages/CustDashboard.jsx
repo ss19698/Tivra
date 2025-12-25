@@ -16,8 +16,6 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const { logoutUser } = useAuth();
-  const [budgets, setBudgets] = useState([]);
-  const [budgetsLoading, setBudgetsLoading] = useState(true);
 
   function useIsMdUp() {
     const [isMdUp, setIsMdUp] = useState(
@@ -39,51 +37,10 @@ export default function Dashboard() {
     }
   }, [isMobile]);
 
-  useEffect(() => {
-    fetchBudgets();
-  }, []);
-
-    const fetchBudgets = async () => {
-      try {
-        setBudgetsLoading(true);
-        const data = await getBudgets();
-
-        const month = new Date().getMonth() + 1;
-        const year = new Date().getFullYear();
-
-        const filtered = Array.isArray(data)
-          ? data.filter(b => b.month === month && b.year === year)
-          : [];
-
-        setBudgets(filtered);
-      } catch (err) {
-        console.error("Budget fetch error:", err);
-        setBudgets([]);
-      } finally {
-        setBudgetsLoading(false);
-      }
-    };
-
-
   const handleLogout = () => {
     logoutUser();
     navigate("/");
   };
-  const transactions = [
-    { name: 'Grocery Store', amount: -85.50, date: 'Today', category: 'Food', type: 'expense' },
-    { name: 'Salary Deposit', amount: 5000.00, date: 'Today', category: 'Income', type: 'income' },
-    { name: 'Electric Bill', amount: -120.00, date: 'Yesterday', category: 'Bills', type: 'expense' },
-    { name: 'Coffee Shop', amount: -12.50, date: 'Yesterday', category: 'Food', type: 'expense' },
-    { name: 'Amazon Purchase', amount: -245.00, date: '2 days ago', category: 'Shopping', type: 'expense' },
-    { name: 'Gas Station', amount: -65.00, date: '2 days ago', category: 'Transport', type: 'expense' }
-  ];
-
-  const bills = [
-    { name: 'Netflix Subscription', amount: 15.99, dueDate: 'Dec 15', status: 'upcoming', auto: true },
-    { name: 'Internet Bill', amount: 89.99, dueDate: 'Dec 18', status: 'upcoming', auto: false },
-    { name: 'Phone Bill', amount: 45.00, dueDate: 'Dec 20', status: 'upcoming', auto: true },
-    { name: 'Rent Payment', amount: 1500.00, dueDate: 'Dec 25', status: 'pending', auto: false }
-  ];
 
   const MenuItem = ({ icon: Icon, label, page }) => (
     <button
@@ -121,9 +78,10 @@ export default function Dashboard() {
           </nav>
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-6 border-t">
-          <button onClick={handleLogout}>
-            <MenuItem icon = {LogOut} label = "LogOut" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 border-t ">
+          <button onClick={handleLogout} className='flex text-red-600 hover:bg-red-50 transition-all duration-300'>
+            <LogOut className="w-5 h-5 mt-1 ml-4 mr-4" />
+            {sidebarOpen ? <span className="font-medium">LogOut</span> : ""}
           </button>
         </div>
       </aside>

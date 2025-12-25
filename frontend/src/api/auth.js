@@ -32,10 +32,7 @@ export const logout = () => {
   localStorage.removeItem("user");
 };
 
-export function getAuthHeaders() {
-  const token = localStorage.getItem('access_token');
-  return {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json',
-  };
-}
+export const getMe = async () => {
+  const res = await axiosClient.get("/auth/me");
+  return res.data;
+};

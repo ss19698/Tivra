@@ -8,6 +8,9 @@ import Dashboard from './pages/CustDashboard.jsx';
 import Services from './pages/Services';
 import Analytics from './pages/Analytics';
 import Support from './pages/Support';
+import AdminDashboard from './pages/AdminDashboard.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AuditorDashboard from './pages/AudiDashboard.jsx';
 
 function MainLayout() {
   return (
@@ -26,10 +29,24 @@ export default function App() {
     <Routes>
       <Route element={<MainLayout />}>
         <Route path="/" element={<Home />} />
-        <Route path = "/Dashboard" element = {<Dashboard/>} />
+        <Route path = "/Dashboard" element = {
+            <ProtectedRoute allowedRoles={["user"]}>
+                <Dashboard />
+            </ProtectedRoute>
+          } />
         <Route path="/Services" element={<Services />} />
         <Route path="/Analytics" element={<Analytics />} />
         <Route path="/Support" element={<Support />} />
+        <Route path ="/AdminDashboard" element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+            </ProtectedRoute>
+          }/>
+          <Route path ="/AuditorDashboard" element={
+            <ProtectedRoute allowedRoles={["Auditor"]}>
+                <AuditorDashboard />
+            </ProtectedRoute>
+          }/>
       </Route>
 
       <Route path="/login" element={<Login />} />
