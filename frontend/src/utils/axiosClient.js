@@ -45,7 +45,7 @@ axiosClient.interceptors.response.use(
 
     if (
       error.response?.status === 401 &&
-      !originalRequest._retry
+      !originalRequest._retry && !originalRequest.url.includes("/auth/login")
     ) {
       originalRequest._retry = true;
 
@@ -61,7 +61,6 @@ axiosClient.interceptors.response.use(
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
 
-        window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }

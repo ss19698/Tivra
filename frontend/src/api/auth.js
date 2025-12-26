@@ -1,12 +1,13 @@
 import axiosClient from "../utils/axiosClient";
 
-export const register = async (name, email, password, phone = "") => {
+export const register = async (name, email, password, phone = "",role) => {
   try {
     const response = await axiosClient.post("/auth/register", {
       name,
       email,
       password,
       phone,
+      role
     });
     return response.data;
   } catch (error) {
@@ -24,12 +25,6 @@ export const login = async (email, password) => {
   } catch (error) {
     throw error.response?.data || error.message;
   }
-};
-
-export const logout = () => {
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("refresh_token");
-  localStorage.removeItem("user");
 };
 
 export const getMe = async () => {
