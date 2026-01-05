@@ -1,20 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Menu, X, Home, CreditCard, ArrowUpRight, ArrowDownRight, Search, 
-  Calendar, Download, Upload, Eye, EyeOff, AlertCircle, CheckCircle, 
-  User, LogOut, Bell, Trash2, Plus,
+  CreditCard, ArrowUpRight, ArrowDownRight, Search, 
+ Download, Eye, EyeOff, Plus,
   IndianRupee
 } from 'lucide-react';
 import { getAccounts } from '../api/accounts';
 import { getTransactions,createTransaction} from '../api/transactions';
 import toast from 'react-hot-toast';
+import Load from '../components/Loader';
 
 export default function Transfer() {
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState(1);
+  const [selectedAccount, setSelectedAccount] = useState(localStorage.getItem("selected_account_id"));
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -33,7 +32,7 @@ export default function Transfer() {
   });
 
   const categories = ['Food', 'Transport', 'Shopping', 'Bills', 'Entertainment', 'Healthcare', 'Salary', 'Other'];
-
+  
   useEffect(() => {
     loadAccounts();
   }, []);
@@ -161,6 +160,10 @@ export default function Transfer() {
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
   const currentAccount = accounts.find(a => a.id === selectedAccount);
+
+  if (loading) {
+    return <Load/>
+  }
 
   return (
     <main className="min-h-screen overflow-y-auto">
@@ -396,6 +399,7 @@ export default function Transfer() {
 
           <input
             type="number"
+            placeholder="2000.00"
             value={form.amount}
             onChange={(e) => setForm({ ...form, amount: e.target.value })}
             className="w-full border border-gray-300 p-3 rounded-lg"

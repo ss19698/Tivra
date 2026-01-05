@@ -2,10 +2,9 @@ import os
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    # Database - Use SQLite for development/testing
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL", 
-        "sqlite:///./banking.db"  # SQLite database file
+        "postgresql://postgres:postgres19@localhost:5432/Bank"
     )
     
     # JWT
