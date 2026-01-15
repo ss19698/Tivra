@@ -66,10 +66,10 @@ export default function Navbar() {
 
       {open && (
         <div className="md:hidden bg-white/80 backdrop-blur-lg px-6 py-4 flex flex-col gap-4 text-gray-800 font-medium border-b border-gray-200">
-          <Link to = '/' className="hover:text-blue-600 transition">Home</Link>
-          <Link to = '/Services' className="hover:text-blue-600 transition">Services</Link>
-          {user?.role === 'user' && (<Link to = '/Analytics' className="hover:text-blue-600 transition">Analytics</Link>)}
-          <Link to = '/Support' className="hover:text-blue-600 transition">Support</Link>
+          <Link to = '/' onClick = {()=> setOpen(false)} className="hover:text-blue-600 transition">Home</Link>
+          <Link to = '/Services' onClick = {()=> setOpen(false)} className="hover:text-blue-600 transition">Services</Link>
+          {user?.role === 'user' && (<Link to = '/Analytics' onClick = {()=> setOpen(false)} className="hover:text-blue-600 transition">Analytics</Link>)}
+          <Link to = '/Support' onClick = {()=> setOpen(false)} className="hover:text-blue-600 transition">Support</Link>
           <button
             onClick={handleAccountClick}
             className="mt-2 flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all"
