@@ -42,8 +42,8 @@ export default function Support() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 pt-24 pb-12">
-      <div className="max-w-7xl mx-auto px-4">
+    <div className="bg-gradient-to-br from-blue-50 to-gray-100 pt-24">
+      <div className=" mx-auto px-4">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-gray-900 mb-4">Customer Support</h1>
           <p className="text-xl text-gray-600">We're here to help you 24/7</p>

@@ -6,5 +6,8 @@ export default defineConfig({
   appType: 'spa', 
   build: {
     outDir: 'dist',
+  },
+  server: {
+    middlewareMode: true,
   }
 })
